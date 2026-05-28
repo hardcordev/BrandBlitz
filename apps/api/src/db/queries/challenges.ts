@@ -90,6 +90,22 @@ export async function getChallengeById(id: string): Promise<Challenge | null> {
   return result.rows[0] ?? null;
 }
 
+export async function getArchivedChallengeById(id: string): Promise<Challenge | null> {
+  const result = await query<Challenge>("SELECT * FROM challenges_archive WHERE id = $1", [id]);
+  return result.rows[0] ?? null;
+}
+
+export async function getChallengeByIdAny(id: string): Promise<Challenge & { archived: boolean } | null> {
+  const result = await query<Challenge & { archived: boolean }>(
+    `SELECT *, false AS archived FROM challenges WHERE id = $1
+     UNION ALL
+     SELECT *, true AS archived FROM challenges_archive WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return result.rows[0] ?? null;
+}
+
 export async function getActiveChallenges(limit = 20, offset = 0): Promise<Challenge[]> {
   const result = await query<Challenge>(
     `SELECT c.*, (c.pool_amount_stroops::numeric / 10000000)::numeric(20,7)::text AS pool_amount_usdc,

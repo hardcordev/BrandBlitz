@@ -35,6 +35,7 @@ export interface PublicUser {
   total_earned_usdc: string;
   challenges_played: number;
   avatar_url: string | null;
+  streak: number;
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
@@ -59,7 +60,7 @@ export async function findUserByPhoneHash(phoneHash: string): Promise<User | nul
 
 export async function getUserPublicProfileByUsername(username: string): Promise<PublicUser | null> {
   const result = await query<PublicUser>(
-    `SELECT display_name, username, league, total_earned_usdc, challenges_played, avatar_url
+    `SELECT display_name, username, league, total_earned_usdc, challenges_played, avatar_url, streak
      FROM users
      WHERE username = $1`,
     [username]

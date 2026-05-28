@@ -4,8 +4,7 @@ void initSentry();
 import { connectDb, closeDb } from "./db";
 import { connectRedis, redis, startRedisEvictionMonitor } from "./lib/redis";
 import { createPayoutWorker } from "./queues/processors/payout.processor";
-import { createLeagueWorker } from "./queues/processors/league.processor";
-import { ensureLeagueRepeatableJobs } from "./queues/league.queue";
+import { createArchiveWorker, scheduleArchiveJob } from "./queues/archive.queue";
 import { logger } from "./lib/logger";
 
 async function startWorker(): Promise<void> {
@@ -13,16 +12,16 @@ async function startWorker(): Promise<void> {
   await connectRedis();
 
   const payoutWorker = createPayoutWorker();
-  const leagueWorker = createLeagueWorker();
-  await ensureLeagueRepeatableJobs();
-  const evictionMonitor = startRedisEvictionMonitor();
-  logger.info("BullMQ worker started — processing payout + league jobs");
+  const archiveWorker = createArchiveWorker();
+  await scheduleArchiveJob();
+
+  logger.info("BullMQ worker started — processing payout and archive jobs");
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received — closing worker`);
     clearInterval(evictionMonitor);
     await payoutWorker.close();
-    await leagueWorker.close();
+    await archiveWorker.close();
     await closeDb();
     await redis.disconnect();
     logger.info("Worker shutdown complete");

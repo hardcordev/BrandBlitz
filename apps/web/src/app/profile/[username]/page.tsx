@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatScore, formatUsdc } from "@/lib/utils";
+import { StreakBadge } from "@/components/gamification/streak-badge";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -50,9 +51,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   if (!user) notFound();
 
-  const recentSessions = user.recentSessions ?? [];
-  const badges = user.id ? await getUserBadges(user.id) : [];
-  const earnedIds = badges.filter((b) => b.earned).map((b) => b.id);
+  const streak = user.streak ?? 0;
+  const milestones = [3, 7, 14, 30];
+  const nextMilestone = milestones.find((m) => m > streak) ?? milestones[milestones.length - 1];
+  const progress = Math.min(1, streak / Math.max(1, nextMilestone));
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
@@ -71,6 +73,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           {user.league && <Badge variant={user.league} className="mt-2">{user.league} League</Badge>}
         </div>
       </div>
+
+      {streak > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Streak Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-[var(--muted-foreground)]">Current streak</p>
+                <p className="text-3xl font-bold text-[var(--primary)]">{streak} days</p>
+              </div>
+              <StreakBadge streak={streak} label="Current streak" />
+            </div>
+            <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+              Next milestone: {nextMilestone} days ({Math.round(progress * 100)}%)
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="mb-8 grid grid-cols-3 gap-4">

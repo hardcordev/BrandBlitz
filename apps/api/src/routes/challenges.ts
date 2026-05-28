@@ -51,7 +51,7 @@ router.get("/", optionalAuth, async (req, res) => {
  * Get challenge details. Questions (without correct answers) included.
  */
 router.get("/:id", optionalAuth, async (req, res) => {
-  const challenge = await getChallengeById(req.params.id);
+  const challenge = await getChallengeByIdAny(req.params.id);
   if (!challenge) throw createError("Challenge not found", 404);
 
   // Return questions without correct_answer and correct_option fields
@@ -66,11 +66,13 @@ router.get("/:id", optionalAuth, async (req, res) => {
  * Paginated leaderboard for a challenge.
  */
 router.get("/:id/leaderboard", async (req, res) => {
-  const challenge = await getChallengeById(req.params.id);
+  const challenge = await getChallengeByIdAny(req.params.id);
   if (!challenge) throw createError("Challenge not found", 404);
 
   const { limit, offset } = PaginationSchema.parse(req.query);
-  const sessions = await getLeaderboard(challenge.id, limit, offset);
+  const sessions = challenge.archived
+    ? await getArchivedLeaderboard(challenge.id, limit, offset)
+    : await getLeaderboard(challenge.id, limit, offset);
 
   res.json({
     challengeId: challenge.id,
